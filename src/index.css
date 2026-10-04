@@ -1,0 +1,57 @@
+/* Light theme's own values, used only as the very first paint (before useTheme's effect runs)
+   and as the documented fallback if a token were ever read before JS sets it. Every theme in
+   `theme/themes.ts` is otherwise applied by `useTheme`, which writes each of `theme.tokens` as an
+   inline custom property on <html> — that always wins over the plain :root rule below, so there
+   is deliberately no per-theme CSS block to keep in sync here. */
+:root {
+  --ink: #14161a;
+  --ink-soft: #52565e;
+  --ink-dim: #9498a0;
+  --line: #e4e6ea;
+  --paper: #ffffff;
+  --paper-soft: #f6f7f9;
+  --accent: #4f46e5;
+  --attention: #e4483d;
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Karla', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-card: 18px;
+  --radius-pill: 999px;
+  --radius-bubble: 14px;
+  --radius-small: 8px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--paper-soft);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+button {
+  font-family: inherit;
+}

@@ -1,0 +1,762 @@
+/* This app's own chrome — the header, the Solutions grid/cards, and the chat screen's shell.
+   Everything colors/shapes itself from the CSS custom properties useTheme.ts writes onto <html>
+   (see index.css's :root for their fallback values), never a hardcoded color, so every screen
+   follows whichever theme config.ts picked. */
+
+/* Layout, mobile-first: the page is a grey canvas (`--paper-soft`) with one floating white card
+   on it — phone-proportioned even on a wide viewport (like a phone screen sitting on a desk),
+   rather than stretching edge to edge on tablet/desktop. Below ~560px (most phones) the card
+   fills the available width instead, so nothing feels cramped on the device this is actually
+   built for first. */
+.portal-shell {
+  min-height: 100dvh;
+  background: var(--paper-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px 20px;
+  /* Reasserts the app's own body font. ArtifactsThemeProvider (SDK) wraps this whole tree in a
+     `display: contents` div carrying an inline `font-family` meant only for SDK widget cards —
+     without this, any of our own text that doesn't set its own font-family (labels, paragraphs)
+     silently inherits the widget font instead (confirmed: Techno's subtitle rendered in
+     JetBrains Mono, the widget font, instead of Karla, our own body font). */
+  font-family: var(--font-body);
+}
+
+.portal-frame {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (min-width: 560px) {
+  .portal-shell {
+    padding: 28px 20px;
+  }
+  .portal-frame {
+    /* Phone-like proportions once there's room to spare, instead of a full-height slab. */
+    height: min(880px, calc(100dvh - 56px));
+    flex: none;
+  }
+}
+
+/* The card's own header row — just the action icons, inside the same white surface as the rest
+   of the card (one floating zone total, not a separate bar hovering above it). No brand/title
+   text (matches the reference: an icon-only top row). Spacing alone separates it from the
+   content below — no rule/border. */
+.portal-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 18px 6px;
+  flex-shrink: 0;
+}
+
+.portal-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.portal-header__logo {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+
+.portal-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The one floating surface everything else lives in. A fixed-black shadow alone reads fine
+   against a light canvas but is invisible against a dark one (the dark themes' --paper-soft
+   canvas is already near-black, so a black shadow blends straight into it) — the hairline
+   --line border is what actually delimits the card in every theme; the shadow just adds depth
+   where it can be seen. */
+.portal-card {
+  flex: 1;
+  min-height: 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1px 3px rgba(17, 17, 17, 0.04), 0 18px 40px -12px rgba(17, 17, 17, 0.16);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-card__scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 24px 22px 28px;
+}
+
+/* ── Team panel (Team solutions only) ──────────────────────────────────────
+   The card body below the topbar: the active screen (Solutions/History/Chat) on the left, and —
+   only while a Team chat has its team panel open on tablet/desktop — a resizable dock to the
+   right, split by a draggable divider. On phone the team instead replaces the chat screen in
+   place (see .portal-team-inline / SolutionChat's `teamScreen`) — there's no room for both. */
+.portal-card__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+
+.portal-card__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A small outline pill — the "See team" / "Hide team" toggle, distinct from the solid dark
+   .portal-cta-pill (that one is for the primary action, this one is a secondary switch). */
+.portal-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.portal-pill-btn:hover {
+  border-color: var(--ink-dim);
+}
+
+.portal-pill-btn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* Phone: the team is a screen of its own, filling the card body in place of the chat pane. */
+.portal-team-inline {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 4px 22px 20px;
+}
+
+.portal-team-inline .ag-team-graph-fit,
+.portal-team-inline .ag-workflow-graph-fit {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+/* Tablet/desktop: the frame (normally capped phone-width, see .portal-frame above) grows just
+   enough to fit the chat at its usual width plus the open team dock — every other screen stays
+   phone-proportioned, only a Team's open chat ever widens. */
+.portal-shell[data-layout='tablet'] .portal-frame,
+.portal-shell[data-layout='desktop'] .portal-frame {
+  max-width: none;
+  width: min(100%, 480px);
+  transition: width 0.3s ease;
+}
+
+.portal-shell[data-layout='tablet'][data-team='aside'] .portal-frame,
+.portal-shell[data-layout='desktop'][data-team='aside'] .portal-frame {
+  width: min(100%, calc(480px + var(--dock-w) + 8px));
+}
+
+/* While the divider is dragged the frame/dock follow the pointer at once, without easing. */
+.portal-shell[data-dragging] .portal-frame,
+.portal-shell[data-dragging] .portal-team-dock {
+  transition: none;
+}
+
+.portal-shell[data-dragging] {
+  user-select: none;
+  cursor: col-resize;
+}
+
+/* The divider: an 8px grab zone with a hairline in the middle, shown only while the team is open. */
+.portal-splitter {
+  flex: none;
+  position: relative;
+  width: 8px;
+  margin: 0 -4px;
+  z-index: 1;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.portal-splitter[hidden] {
+  display: none;
+}
+
+.portal-splitter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3.25px;
+  width: 1.5px;
+  background: var(--line);
+  transition: background 0.15s ease;
+}
+
+.portal-splitter:hover::before,
+.portal-splitter:focus-visible::before,
+.portal-shell[data-dragging] .portal-splitter::before {
+  background: var(--ink-dim);
+}
+
+.portal-splitter:focus-visible {
+  outline: none;
+}
+
+.portal-team-dock {
+  flex: none;
+  width: 0;
+  overflow: hidden;
+  background: var(--paper);
+  color: var(--ink-soft);
+  transition: width 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-team-dock[data-open='true'] {
+  width: var(--dock-w);
+}
+
+/* The content keeps its own width while the dock opens, so it slides in rather than being squeezed. */
+.portal-team-dock__content {
+  flex: 1;
+  min-height: 0;
+  width: var(--dock-w);
+  box-sizing: border-box;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portal-team-dock .ag-team-graph-fit,
+.portal-team-dock .ag-workflow-graph-fit {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+}
+
+/* A solid squircle button — the floating back/history/cancel affordance. Rounded like the rest
+   of this app's shapes (var(--radius-small)), not a full circle. Used both loose in the header
+   and, on the chat screen, positioned above the chat pane. */
+.portal-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-small);
+  border: none;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.portal-icon-btn:hover {
+  opacity: 0.85;
+}
+
+.portal-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.portal-icon-btn--ghost {
+  background: var(--paper-soft);
+  color: var(--ink);
+}
+
+/* A solid pill CTA — the app's primary-action shape, independent of the SDK's own button styles. */
+.portal-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 12px 22px;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.portal-cta-pill:hover {
+  opacity: 0.88;
+}
+
+.portal-cta-pill:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ── Solutions list ─────────────────────────────────────────────────────── */
+
+.portal-eyebrow {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  font-weight: 700;
+  margin: 0 0 10px;
+}
+
+.portal-title {
+  font-size: 32px;
+  line-height: 1.15;
+  margin: 0 0 8px;
+  color: var(--ink);
+  max-width: 18ch;
+}
+
+.portal-subtitle {
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  margin: 0 0 20px;
+  max-width: 46ch;
+  line-height: 1.5;
+}
+
+/* A vertical list of rows, not a grid: this reads intentionally — like a directory or a
+   menu — whether it holds one Solution or twenty, instead of a multi-column grid that leaves
+   an awkward half-empty row when the count doesn't fill it. Each row is its own soft-shadowed
+   card with a gap between, not a continuous list divided by border lines. */
+.portal-solutions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.portal-solution-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  /* Same fill as the outer card — separation comes mainly from the hairline border below, with
+     the shadow adding depth on top where it's visible (a fixed-black shadow alone disappears
+     against a dark theme's near-black canvas; a tinted fill would instead read as a flat
+     grey/beige box, not a raised one — see .portal-card above for the same reasoning). */
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(17, 17, 17, 0.06), 0 8px 20px -6px rgba(17, 17, 17, 0.1);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.portal-solution-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(17, 17, 17, 0.08);
+}
+
+.portal-solution-row:hover .portal-solution-row__chevron {
+  transform: translateX(2px);
+  color: var(--accent);
+}
+
+.portal-solution-row__icon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-small);
+  /* Paper-soft, not paper — the row itself is white now (its own shadow does the separating from
+     the page), so the icon needs its own tint to read as a distinct thumbnail. */
+  background: var(--paper-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.portal-solution-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.portal-solution-row__kind {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.portal-solution-row__name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.portal-solution-row__role {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.portal-solution-row__chevron {
+  flex-shrink: 0;
+  color: var(--ink-dim);
+  transition: transform 0.12s ease, color 0.12s ease;
+}
+
+.portal-empty,
+.portal-error {
+  font-size: 13.5px;
+  color: var(--ink-dim);
+  padding: 24px 4px;
+  text-align: center;
+}
+
+.portal-error {
+  color: var(--attention);
+}
+
+/* ── Theme picker dialog ────────────────────────────────────────────────── */
+
+.portal-theme-dialog {
+  border: none;
+  border-radius: var(--radius-card);
+  padding: 20px;
+  width: min(320px, calc(100vw - 40px));
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+}
+
+.portal-theme-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.32);
+}
+
+.portal-theme-dialog__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  color: var(--ink);
+}
+
+.portal-theme-dialog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.portal-theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-small);
+  padding: 10px 8px;
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.portal-theme-option:hover {
+  background: var(--paper-soft);
+}
+
+.portal-theme-option[data-active='true'] {
+  color: var(--accent);
+}
+
+.portal-theme-option__swatch {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+/* ── History ────────────────────────────────────────────────────────────── */
+
+.portal-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-pill);
+  padding: 10px 16px;
+  margin-bottom: 14px;
+  color: var(--ink-dim);
+}
+
+/* Same idea, smaller footprint — used on the Solutions screen, where a search bar is a nice-to-
+   have once there are several entries rather than the main navigation tool History's is. */
+.portal-search--compact {
+  padding: 7px 14px;
+  margin-bottom: 16px;
+  background: var(--paper-soft);
+  border-color: transparent;
+}
+
+.portal-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.portal-search input::placeholder {
+  color: var(--ink-dim);
+}
+
+.portal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.portal-filter-chip {
+  border: 1px solid var(--line);
+  background: var(--paper);
+  color: var(--ink-soft);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  cursor: pointer;
+}
+
+.portal-filter-chip[data-active='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+
+.portal-history-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+  background: var(--paper);
+  /* See .portal-solution-row above: the hairline border is what actually delimits the row in a
+     dark theme — a fixed-black shadow alone disappears against a near-black canvas. */
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  padding: 14px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(17, 17, 17, 0.06), 0 8px 20px -6px rgba(17, 17, 17, 0.1);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.portal-history-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(17, 17, 17, 0.08);
+}
+
+.portal-history-row__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.portal-history-row__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.portal-history-row__name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0;
+}
+
+.portal-history-row__time {
+  font-size: 12px;
+  color: var(--ink-dim);
+  margin: 0;
+}
+
+.portal-status-badge {
+  flex-shrink: 0;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--radius-pill);
+  padding: 3px 10px;
+}
+
+.portal-status-badge[data-status='waiting'] {
+  background: color-mix(in srgb, var(--attention) 16%, transparent);
+  color: var(--attention);
+}
+
+.portal-status-badge[data-status='active'] {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+.portal-status-badge[data-status='failed'] {
+  background: color-mix(in srgb, var(--attention) 16%, transparent);
+  color: var(--attention);
+}
+
+/* Why a run failed: a short line under the time, clipped to two lines in the row. */
+.portal-history-row__error {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--attention);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.portal-status-badge[data-status='completed'] {
+  background: var(--paper-soft);
+  color: var(--ink-dim);
+}
+
+.portal-history-row__dismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--ink-dim);
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 0.12s ease, color 0.12s ease;
+}
+
+.portal-history-row:hover .portal-history-row__dismiss {
+  opacity: 1;
+}
+
+.portal-history-row__dismiss:hover {
+  color: var(--attention);
+}
+
+/* ── Chat screen ────────────────────────────────────────────────────────── */
+/* Renders directly inside .portal-card (see App.tsx) — the card itself is the chat surface, so
+   this only adds its own small header row + lets ChatDiscussion fill the rest and scroll on its
+   own, instead of nesting a second bordered box inside the card like the Solutions/History
+   screens' plain padded content. */
+
+.portal-chat-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-chat-shell__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px 12px;
+  flex-shrink: 0;
+}
+
+.portal-chat-pane {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+/* The SDK's ChatInput ships unstyled by default (plain rectangle, square send button, ghost
+   icons) — every app that wants its own look overrides these classes itself (mirrors the Trip
+   Manager showcase's own chat.css, same classes, its own tokens instead of these). Without this,
+   the input silently fell back to the SDK's bare default shape/colors regardless of which theme
+   was picked here. */
+.ag-chat-discussion__input {
+  padding: 10px 16px 16px;
+}
+
+.ag-chat-input {
+  border: none;
+  background: var(--paper-soft);
+  /* A composer holds a message, attachment chips and two buttons — a full pill reads as a search
+     field and gets lumpy once it grows; a softly rounded box fits what it contains. */
+  border-radius: var(--radius-bubble);
+  padding: 6px 6px 6px 16px;
+}
+
+.ag-chat-input--hil {
+  border: 1.5px solid var(--accent);
+  /* A tinted surface mixed from the theme's own accent, not a fixed literal — stays legible and
+     on-brand whichever theme is active instead of one fixed light tint. */
+  background: color-mix(in srgb, var(--accent) 10%, var(--paper));
+}
+
+.ag-chat-input__field {
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+
+.ag-chat-input__field::placeholder {
+  color: var(--ink-dim);
+}
+
+.ag-chat-input__send {
+  background: var(--ink);
+  color: var(--paper);
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-small);
+}
+
+.ag-chat-input__icon-button {
+  color: var(--ink-dim);
+}
+
+.ag-chat-input__chip {
+  border-radius: var(--radius-small);
+  background: var(--paper);
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+}
