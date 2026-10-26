@@ -84,6 +84,7 @@
    --line border is what actually delimits the card in every theme; the shadow just adds depth
    where it can be seen. */
 .portal-card {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: var(--paper);
@@ -759,4 +760,63 @@
   background: var(--paper);
   color: var(--ink-soft);
   border: 1px solid var(--line);
+}
+
+/* While the list loads: the shape of its rows, gently breathing. */
+.portal-solution-row--skeleton {
+  cursor: default;
+  pointer-events: none;
+}
+
+.portal-skeleton {
+  display: block;
+  height: 10px;
+  width: 70%;
+  margin: 5px 0;
+  border-radius: var(--radius-pill);
+  background: var(--line);
+  animation: portal-skeleton-breathe 1.4s ease-in-out infinite;
+}
+
+.portal-skeleton--short {
+  width: 30%;
+}
+
+@keyframes portal-skeleton-breathe {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* The SDK's "Just a moment…" card, inside the portal card, in its top bar (left of the buttons), in the portal's paper, ink and accent. */
+.portal-wait {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  pointer-events: none;
+}
+
+.portal-wait .ag-wait {
+  pointer-events: auto;
+  box-shadow: 0 12px 28px -14px rgba(17, 17, 17, 0.3);
+}
+
+.ag-wait {
+  --ag-surface: var(--paper);
+  --ag-primary: var(--accent);
+  --ag-wait-track: var(--line);
+  color: var(--ink);
+  font-family: var(--font-body);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-skeleton {
+    animation: none;
+  }
 }

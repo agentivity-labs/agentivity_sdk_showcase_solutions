@@ -6,6 +6,7 @@ import {
   ArtifactsThemeProvider,
   ChatController,
   TeamGraph,
+  WaitNotice,
   WorkflowGraph,
   teamAvatarResolver,
   teamHubMemberId,
@@ -54,7 +55,8 @@ function HistoryIcon() {
 
 export default function App() {
   return (
-    <AgentivityProvider baseUrl={baseUrl}>
+    // The wait is shown inside the portal's card (see PortalShell), rather than over the page.
+    <AgentivityProvider baseUrl={baseUrl} waitNotice={false}>
       <ThemedPortal />
     </AgentivityProvider>
   );
@@ -179,6 +181,10 @@ function PortalShell({ themeId, onThemeChange }: { themeId: string; onThemeChang
     <div className="portal-shell" data-layout={layout} data-team={panelAside ? 'aside' : 'closed'} data-dragging={dragging || undefined}>
       <div className="portal-frame" style={{ ['--dock-w' as string]: `${dockWidth}px` }}>
         <div ref={cardRef} className="portal-card">
+          {/* A workspace asleep takes most of a minute to answer its first call: "Just a moment…" meanwhile, in the top bar. */}
+          <div className="portal-wait">
+            <WaitNotice waiting={client.waiting} texts={{ title: 'Just a moment…', detail: 'Getting things ready for you.' }} />
+          </div>
           <div className="portal-topbar">
             <div className="portal-header__actions">
               <ThemeSwitcher activeId={themeId} onChange={onThemeChange} />

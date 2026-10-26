@@ -75,6 +75,21 @@ export function Solutions({ onSelect }: { onSelect: (entity: EntityUnit) => void
       {/* A failed request while the server is unreachable is the notice above, not an error of its own. */}
       {error && online && !solutions && <p className="portal-error">{error}</p>}
 
+      {/* Loading (a workspace that wakes up takes most of a minute): the shape of the list, not an empty page. */}
+      {!solutions && !error && online && (
+        <div className="portal-solutions-list" aria-hidden="true">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="portal-solution-row portal-solution-row--skeleton">
+              <span className="portal-solution-row__icon" />
+              <span className="portal-solution-row__body">
+                <span className="portal-skeleton portal-skeleton--short" />
+                <span className="portal-skeleton" />
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {solutions?.length === 0 && (
         <p className="portal-empty">
           Nothing to show yet — tag an agent, team, or workflow with{' '}
